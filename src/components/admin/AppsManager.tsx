@@ -98,6 +98,24 @@ export const AppsManager: React.FC<AppsManagerProps> = ({
       return;
     }
 
+    // Validate Recommended Limit (max 3)
+    if (editingApp.isRecommended && editingApp.status === 'active') {
+      const recCount = apps.filter(a => a.isRecommended && a.status === 'active' && (isNew ? true : a.slug !== editingApp.slug)).length;
+      if (recCount >= 3) {
+        setErrorMsg('Maximum of 3 Recommended Top Picks apps allowed. Please disable recommended status on another app first.');
+        return;
+      }
+    }
+
+    // Validate New Picks Limit (max 5)
+    if (editingApp.isNewPick && editingApp.status === 'active') {
+      const newPicksCount = apps.filter(a => a.isNewPick && a.status === 'active' && (isNew ? true : a.slug !== editingApp.slug)).length;
+      if (newPicksCount >= 5) {
+        setErrorMsg('Maximum of 5 New Picks apps allowed in the 3D rotating slider. Please disable another new pick app first.');
+        return;
+      }
+    }
+
     const url = isNew ? '/api/apps' : `/api/apps/${editingApp.slug}`;
     const method = isNew ? 'POST' : 'PUT';
 
@@ -115,8 +133,14 @@ export const AppsManager: React.FC<AppsManagerProps> = ({
         setIsEditing(false);
         if (onRefresh) onRefresh();
       } else {
-        const err = await res.json();
-        setErrorMsg(err.message || 'Failed to save application.');
+        let errMsg = 'Failed to save application.';
+        try {
+          const err = await res.json();
+          errMsg = err.message || errMsg;
+        } catch (_) {
+          errMsg = `Server error (${res.status}): ${res.statusText || 'Internal Server Error'}`;
+        }
+        setErrorMsg(errMsg);
       }
     } catch (err) {
       console.error(err);
@@ -203,7 +227,7 @@ export const AppsManager: React.FC<AppsManagerProps> = ({
 
       {/* Editor Modal Window (Render inline to avoid createPortal SSR layout errors) */}
       {isEditing && (
-        <div className="fixed inset-0 z-50 bg-black/45 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-50 bg-black/45 backdrop-blur-xs flex items-start justify-center p-4 overflow-y-auto pt-6 md:pt-16">
           <form
             onSubmit={handleSave}
             className="w-full max-w-2xl rounded-2xl border border-slate-200 bg-white p-6 md:p-8 space-y-5 shadow-2xl relative max-h-[90vh] overflow-y-auto text-left"
@@ -367,56 +391,113 @@ export const AppsManager: React.FC<AppsManagerProps> = ({
                 />
               </div>
 
-              {/* Placements Checkboxes */}
-              <div className="flex flex-wrap gap-4 items-center pt-2 md:col-span-2">
+              {/* Placement Mode Selection */}
+              <div className="space-y-2.5 md:col-span-2 pt-1">
+                <label className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider block font-header">Placement Display Mode</label>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {/* Mode 1: Recommended */}
+                  <label className={`p-3 rounded-xl border flex flex-col justify-between cursor-pointer select-none transition-all ${
+                    editingApp.isRecommended
+                      ? 'border-amber-400 bg-amber-50/20 shadow-xs font-bold'
+                      : 'border-slate-200 bg-white hover:border-slate-350'
+                  }`}>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="placementMode"
+                        checked={!!editingApp.isRecommended}
+                        onChange={() => setEditingApp(prev => ({
+                          ...prev,
+                          isRecommended: true,
+                          isNewPick: false,
+                          featured: true,
+                          isAllApps: true
+                        }))}
+                        className="w-4 h-4 accent-amber-600 cursor-pointer"
+                      />
+                      <span className="text-xs font-extrabold text-slate-850">Top 3 Recommended</span>
+                    </div>
+                    <span className="text-[9.5px] text-slate-400 block mt-1.5 font-semibold">
+                      Shows on the top 3 gold recommended podium. (Max limit: 3)
+                    </span>
+                  </label>
+
+                  {/* Mode 2: New Picks */}
+                  <label className={`p-3 rounded-xl border flex flex-col justify-between cursor-pointer select-none transition-all ${
+                    editingApp.isNewPick
+                      ? 'border-blue-400 bg-blue-50/20 shadow-xs font-bold'
+                      : 'border-slate-200 bg-white hover:border-slate-350'
+                  }`}>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="placementMode"
+                        checked={!!editingApp.isNewPick}
+                        onChange={() => setEditingApp(prev => ({
+                          ...prev,
+                          isRecommended: false,
+                          isNewPick: true,
+                          featured: false,
+                          isAllApps: true
+                        }))}
+                        className="w-4 h-4 accent-blue-600 cursor-pointer"
+                      />
+                      <span className="text-xs font-extrabold text-slate-850">New Picks</span>
+                    </div>
+                    <span className="text-[9.5px] text-slate-400 block mt-1.5 font-semibold">
+                      Shows in the 3D rotating swiper carousel. (Max limit: 5)
+                    </span>
+                  </label>
+
+                  {/* Mode 3: Normal */}
+                  <label className={`p-3 rounded-xl border flex flex-col justify-between cursor-pointer select-none transition-all ${
+                    !editingApp.isRecommended && !editingApp.isNewPick
+                      ? 'border-emerald-400 bg-emerald-50/15 shadow-xs font-bold'
+                      : 'border-slate-200 bg-white hover:border-slate-350'
+                  }`}>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="placementMode"
+                        checked={!editingApp.isRecommended && !editingApp.isNewPick}
+                        onChange={() => setEditingApp(prev => ({
+                          ...prev,
+                          isRecommended: false,
+                          isNewPick: false,
+                          featured: false,
+                          isAllApps: true
+                        }))}
+                        className="w-4 h-4 accent-emerald-600 cursor-pointer"
+                      />
+                      <span className="text-xs font-extrabold text-slate-850">Normal App</span>
+                    </div>
+                    <span className="text-[9.5px] text-slate-400 block mt-1.5 font-semibold">
+                      Standard listing. Appears in the "All Apps" vertical grids.
+                    </span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Placements Toggle Checkboxes */}
+              <div className="flex flex-wrap gap-4 items-center pt-1 md:col-span-2">
                 <label className="flex items-center gap-1.5 text-xs font-bold text-slate-600 cursor-pointer select-none bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl hover:bg-slate-100 transition-colors">
                   <input
                     type="checkbox"
                     checked={editingApp.status === 'active'}
                     onChange={(e) => setEditingApp(prev => ({ ...prev, status: e.target.checked ? 'active' : 'inactive' }))}
-                    className="w-4 h-4 accent-blue-600 rounded"
+                    className="w-4 h-4 accent-blue-600 rounded cursor-pointer"
                   />
-                  <span>Active Listing</span>
+                  <span>Active Listing Status (Visible on Website)</span>
                 </label>
 
                 <label className="flex items-center gap-1.5 text-xs font-bold text-slate-600 cursor-pointer select-none bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl hover:bg-slate-100 transition-colors">
                   <input
                     type="checkbox"
-                    checked={editingApp.featured}
-                    onChange={(e) => setEditingApp(prev => ({ ...prev, featured: e.target.checked }))}
-                    className="w-4 h-4 accent-indigo-600 rounded"
-                  />
-                  <span>Featured Status</span>
-                </label>
-
-                <label className="flex items-center gap-1.5 text-xs font-bold text-slate-600 cursor-pointer select-none bg-blue-50/50 border border-blue-200 px-3 py-1.5 rounded-xl hover:bg-blue-50 transition-colors">
-                  <input
-                    type="checkbox"
-                    checked={!!editingApp.isRecommended}
-                    onChange={(e) => setEditingApp(prev => ({ ...prev, isRecommended: e.target.checked }))}
-                    className="w-4 h-4 accent-amber-600 rounded"
-                  />
-                  <span>Top 3 Recommended</span>
-                </label>
-
-                <label className="flex items-center gap-1.5 text-xs font-bold text-slate-600 cursor-pointer select-none bg-blue-50/50 border border-blue-200 px-3 py-1.5 rounded-xl hover:bg-blue-50 transition-colors">
-                  <input
-                    type="checkbox"
-                    checked={!!editingApp.isNewPick}
-                    onChange={(e) => setEditingApp(prev => ({ ...prev, isNewPick: e.target.checked }))}
-                    className="w-4 h-4 accent-blue-600 rounded"
-                  />
-                  <span>New Picks</span>
-                </label>
-
-                <label className="flex items-center gap-1.5 text-xs font-bold text-slate-600 cursor-pointer select-none bg-blue-50/50 border border-blue-200 px-3 py-1.5 rounded-xl hover:bg-blue-50 transition-colors">
-                  <input
-                    type="checkbox"
                     checked={editingApp.isAllApps !== false}
                     onChange={(e) => setEditingApp(prev => ({ ...prev, isAllApps: e.target.checked }))}
-                    className="w-4 h-4 accent-emerald-600 rounded"
+                    className="w-4 h-4 accent-emerald-600 rounded cursor-pointer"
                   />
-                  <span>Total All Apps</span>
+                  <span>Show in All Apps Lobbies Grid</span>
                 </label>
               </div>
             </div>

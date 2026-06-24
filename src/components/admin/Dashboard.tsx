@@ -107,8 +107,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
         setSaveSuccess(true);
         if (onRefreshSettings) onRefreshSettings();
       } else {
-        const err = await res.json();
-        setSaveError(err.message || 'Failed to save settings.');
+        let errMsg = 'Failed to save settings.';
+        try {
+          const err = await res.json();
+          errMsg = err.message || errMsg;
+        } catch (_) {
+          errMsg = `Server error (${res.status}): ${res.statusText || 'Internal Server Error'}`;
+        }
+        setSaveError(errMsg);
       }
     } catch (err) {
       console.error(err);

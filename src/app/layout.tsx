@@ -8,6 +8,8 @@ export const metadata = {
   description: 'Discover, compare and download premium rummy and skill apps.',
 };
 
+export const dynamic = 'force-dynamic';
+
 export default function RootLayout({
   children,
 }: {

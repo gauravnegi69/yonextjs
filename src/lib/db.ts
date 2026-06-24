@@ -188,25 +188,31 @@ let useMongo = false;
 let isConnected = false;
 
 export async function connectDb() {
-  if (isConnected) return;
   const mongoUri = process.env.MONGO_URI || '';
   if (!mongoUri || mongoUri === '//MONGO_URI') {
     useMongo = false;
     initJsonDb();
-    isConnected = true;
     return;
   }
-  try {
-    console.log(`Connecting to MongoDB at: ${mongoUri}...`);
-    await mongoose.connect(mongoUri, { serverSelectionTimeoutMS: 2000 });
+
+  // Reuse existing active connection
+  if (mongoose.connection.readyState === 1) {
     useMongo = true;
-    isConnected = true;
+    return;
+  }
+
+  try {
+    console.log(`Connecting to MongoDB...`);
+    await mongoose.connect(mongoUri, { 
+      serverSelectionTimeoutMS: 5000,
+      bufferCommands: false
+    });
+    useMongo = true;
     console.log('Successfully connected to MongoDB.');
   } catch (error) {
-    console.log('MongoDB not available. Falling back to local JSON database storage.');
+    console.error('MongoDB connection error, falling back to local JSON DB:', error);
     useMongo = false;
     initJsonDb();
-    isConnected = true;
   }
 }
 
@@ -251,33 +257,37 @@ const defaultSettings: SiteSettings = {
 };
 
 function initJsonDb() {
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
-  }
-  if (!fs.existsSync(JSON_DB_PATH)) {
-    const defaultData: LocalSchema = {
-      apps: [],
-      categories: [
-        { name: 'Rummy', slug: 'rummy', icon: 'Cards', description: 'Classic skill Rummy variations' },
-        { name: 'Teen Patti', slug: 'teen-patti', icon: 'Gamepad', description: 'Fast card game battles' },
-        { name: 'Slots', slug: 'slots', icon: 'Dice', description: 'Fruit machine and video slots' },
-        { name: 'Casinos', slug: 'casinos', icon: 'Coins', description: 'Live table games' }
-      ],
-      tags: [
-        { name: 'Free Bonus', slug: 'free-bonus' },
-        { name: 'Real Cash', slug: 'real-cash' },
-        { name: 'Fast Withdrawal', slug: 'fast-withdrawal' },
-        { name: 'Top Rated', slug: 'top-rated' }
-      ],
-      collections: [
-        { name: 'Trending Play', slug: 'trending', description: 'Most played apps this week', appSlugs: [] },
-        { name: "Editor's Picks", slug: 'editors-picks', description: 'Curated list of premium games', appSlugs: [] }
-      ],
-      analytics: [],
-      settings: defaultSettings
-    };
-    fs.writeFileSync(JSON_DB_PATH, JSON.stringify(defaultData, null, 2), 'utf-8');
-    console.log(`Created default JSON database at ${JSON_DB_PATH}`);
+  try {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+    if (!fs.existsSync(JSON_DB_PATH)) {
+      const defaultData: LocalSchema = {
+        apps: [],
+        categories: [
+          { name: 'Rummy', slug: 'rummy', icon: 'Cards', description: 'Classic skill Rummy variations' },
+          { name: 'Teen Patti', slug: 'teen-patti', icon: 'Gamepad', description: 'Fast card game battles' },
+          { name: 'Slots', slug: 'slots', icon: 'Dice', description: 'Fruit machine and video slots' },
+          { name: 'Casinos', slug: 'casinos', icon: 'Coins', description: 'Live table games' }
+        ],
+        tags: [
+          { name: 'Free Bonus', slug: 'free-bonus' },
+          { name: 'Real Cash', slug: 'real-cash' },
+          { name: 'Fast Withdrawal', slug: 'fast-withdrawal' },
+          { name: 'Top Rated', slug: 'top-rated' }
+        ],
+        collections: [
+          { name: 'Trending Play', slug: 'trending', description: 'Most played apps this week', appSlugs: [] },
+          { name: "Editor's Picks", slug: 'editors-picks', description: 'Curated list of premium games', appSlugs: [] }
+        ],
+        analytics: [],
+        settings: defaultSettings
+      };
+      fs.writeFileSync(JSON_DB_PATH, JSON.stringify(defaultData, null, 2), 'utf-8');
+      console.log(`Created default JSON database at ${JSON_DB_PATH}`);
+    }
+  } catch (err) {
+    console.error('Failed to initialize local JSON DB:', err);
   }
 }
 

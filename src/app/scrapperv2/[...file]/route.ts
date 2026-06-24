@@ -8,7 +8,10 @@ export async function GET(
 ) {
   try {
     const fileSegments = params.file;
-    const scrapperv2Dir = path.join(process.cwd(), '..', 'scrapperv2');
+    let scrapperv2Dir = path.join(process.cwd(), 'public', 'scrapperv2');
+    if (!fs.existsSync(path.join(scrapperv2Dir, ...fileSegments))) {
+      scrapperv2Dir = path.join(process.cwd(), '..', 'scrapperv2');
+    }
     const filePath = path.join(scrapperv2Dir, ...fileSegments);
 
     // Prevent directory traversal attacks
