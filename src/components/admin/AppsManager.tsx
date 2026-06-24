@@ -49,6 +49,7 @@ export const AppsManager: React.FC<AppsManagerProps> = ({
   const [editingApp, setEditingApp] = useState<AppDetail>(defaultAppForm);
   const [isNew, setIsNew] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [managerSubTab, setManagerSubTab] = useState<'all' | 'recommended' | 'newpicks'>('all');
 
   // Form lists helpers
   const [newFeature, setNewFeature] = useState('');
@@ -73,7 +74,18 @@ export const AppsManager: React.FC<AppsManagerProps> = ({
     }));
   };
 
-  const filtered = apps.filter(app =>
+  const getSubTabApps = () => {
+    if (managerSubTab === 'recommended') {
+      return apps.filter(a => a.isRecommended);
+    } else if (managerSubTab === 'newpicks') {
+      return apps.filter(a => a.isNewPick);
+    }
+    return apps; // 'all'
+  };
+
+  const subTabApps = getSubTabApps();
+
+  const filtered = subTabApps.filter(app =>
     app.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -85,7 +97,24 @@ export const AppsManager: React.FC<AppsManagerProps> = ({
   };
 
   const handleNew = () => {
-    setEditingApp({ ...defaultAppForm });
+    const defaultApp = { ...defaultAppForm };
+    if (managerSubTab === 'recommended') {
+      defaultApp.isRecommended = true;
+      defaultApp.isNewPick = false;
+      defaultApp.featured = true;
+      defaultApp.isAllApps = true;
+    } else if (managerSubTab === 'newpicks') {
+      defaultApp.isRecommended = false;
+      defaultApp.isNewPick = true;
+      defaultApp.featured = false;
+      defaultApp.isAllApps = true;
+    } else {
+      defaultApp.isRecommended = false;
+      defaultApp.isNewPick = false;
+      defaultApp.featured = false;
+      defaultApp.isAllApps = true;
+    }
+    setEditingApp(defaultApp);
     setIsNew(true);
     setIsEditing(true);
     setErrorMsg('');
@@ -204,6 +233,15 @@ export const AppsManager: React.FC<AppsManagerProps> = ({
     setEditingApp(prev => ({ ...prev, tags: prev.tags.filter(t => t !== tag) }));
   };
 
+  const getCreateButtonText = () => {
+    if (managerSubTab === 'recommended') return 'Add Recommended App';
+    if (managerSubTab === 'newpicks') return 'Add New Pick App';
+    return 'Create New Listing';
+  };
+
+  const activeRecommendedCount = apps.filter(a => a.isRecommended && a.status === 'active').length;
+  const activeNewPicksCount = apps.filter(a => a.isNewPick && a.status === 'active').length;
+
   return (
     <div className="space-y-6 pb-20 animate-fadeIn text-slate-800">
       
@@ -212,7 +250,9 @@ export const AppsManager: React.FC<AppsManagerProps> = ({
         <div>
           <h1 className="text-base font-black text-slate-850 uppercase tracking-wide">Database Manager</h1>
           <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5 block">
-            Listing Control & CRUD
+            {managerSubTab === 'recommended' && `Top Recommended (Active: ${activeRecommendedCount}/3)`}
+            {managerSubTab === 'newpicks' && `New Picks Slider (Active: ${activeNewPicksCount}/5)`}
+            {managerSubTab === 'all' && 'All Listings (Normal & Seeded)'}
           </span>
         </div>
 
@@ -221,8 +261,30 @@ export const AppsManager: React.FC<AppsManagerProps> = ({
           className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-extrabold text-xs shadow-sm transition-all active:scale-98 cursor-pointer border-0"
         >
           <Plus size={14} />
-          Create New Listing
+          {getCreateButtonText()}
         </button>
+      </div>
+
+      {/* Sub-tab navigation */}
+      <div className="flex border border-slate-200 bg-slate-100 p-1 rounded-xl gap-1">
+        {[
+          { id: 'all', label: 'All & Seeded Apps' },
+          { id: 'recommended', label: 'Top 3 Recommended' },
+          { id: 'newpicks', label: 'New Picks (Max 5)' }
+        ].map(tab => (
+          <button
+            key={tab.id}
+            type="button"
+            onClick={() => setManagerSubTab(tab.id as any)}
+            className={`flex-1 py-2 text-center text-[10.5px] font-extrabold uppercase rounded-lg transition-all cursor-pointer border-0 outline-none ${
+              managerSubTab === tab.id
+                ? 'bg-slate-800 text-white shadow-sm'
+                : 'text-slate-500 hover:text-slate-850 hover:bg-slate-200/50'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
 
       {/* Editor Modal Window (Render inline to avoid createPortal SSR layout errors) */}
