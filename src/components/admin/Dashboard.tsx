@@ -171,7 +171,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       {viewMode === 'metrics' ? (
         <>
           {/* 2. Quick stats metrics widgets grid */}
-          <div className="grid grid-cols-1 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             
             {/* Total Views Card */}
             <div className="p-4 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-between shadow-sm">
@@ -211,7 +211,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
 
           {/* 3. Performance Rankings Side by Side tables */}
-          <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             
             {/* Most Viewed Apps list */}
             <section className="p-4 rounded-xl border border-slate-200 bg-white space-y-3 shadow-sm">

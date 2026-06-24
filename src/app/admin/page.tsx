@@ -101,7 +101,7 @@ export default function AdminPage() {
 
   return (
     <div className="min-h-screen bg-slate-950 flex items-start justify-center w-full">
-      <div className="mobile-container min-h-screen flex flex-col justify-between relative w-full max-w-[480px] bg-slate-50 text-slate-800 shadow-2xl pb-16">
+      <div className="mobile-container min-h-screen flex flex-col justify-between relative w-full max-w-[480px] lg:max-w-[1200px] bg-slate-50 text-slate-800 shadow-2xl pb-16">
 
         {/* Admin Header */}
         <header className="sticky top-0 z-40 bg-slate-900 text-white px-3.5 py-3 flex items-center justify-between border-b border-white/5 select-none shadow-md">
