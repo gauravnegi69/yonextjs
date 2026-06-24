@@ -185,7 +185,11 @@ export const SettingsModel = mongoose.models.Settings || mongoose.model<SiteSett
 // Database Connection & Mode Control
 // -------------------------------------------------------------
 let useMongo = false;
-let isConnected = false;
+
+let cached = (global as any).mongoose;
+if (!cached) {
+  cached = (global as any).mongoose = { conn: null, promise: null };
+}
 
 export async function connectDb() {
   const mongoUri = process.env.MONGO_URI || '';
@@ -201,16 +205,29 @@ export async function connectDb() {
     return;
   }
 
-  try {
-    console.log(`Connecting to MongoDB...`);
-    await mongoose.connect(mongoUri, { 
-      serverSelectionTimeoutMS: 5000,
-      bufferCommands: false
-    });
+  if (cached.conn) {
     useMongo = true;
-    console.log('Successfully connected to MongoDB.');
+    return;
+  }
+
+  if (!cached.promise) {
+    console.log(`Initializing MongoDB connection...`);
+    cached.promise = mongoose.connect(mongoUri, {
+      serverSelectionTimeoutMS: 5000,
+      bufferCommands: true
+    }).then((m) => {
+      console.log('Successfully connected to MongoDB.');
+      useMongo = true;
+      return m;
+    });
+  }
+
+  try {
+    cached.conn = await cached.promise;
+    useMongo = true;
   } catch (error) {
     console.error('MongoDB connection error, falling back to local JSON DB:', error);
+    cached.promise = null;
     useMongo = false;
     initJsonDb();
   }
