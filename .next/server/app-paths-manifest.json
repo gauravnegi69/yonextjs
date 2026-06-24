@@ -1,0 +1,11 @@
+{
+  "/page": "app/page.js",
+  "/scrapperv2/[...file]/route": "app/scrapperv2/[...file]/route.js",
+  "/all-yonoapps/page": "app/all-yonoapps/page.js",
+  "/admin/page": "app/admin/page.js",
+  "/api/apps/route": "app/api/apps/route.js",
+  "/api/auth/verify/route": "app/api/auth/verify/route.js",
+  "/api/analytics/route": "app/api/analytics/route.js",
+  "/api/settings/route": "app/api/settings/route.js",
+  "/api/categories/route": "app/api/categories/route.js"
+}
